@@ -1,0 +1,42 @@
+#### 1.remove adaptors by trimmomatic
+
+java -jar /home/icbs_shared_storage_yod/Program_NGS_sanger17/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 6 -phred33 -trimlog trimmolog1.txt WT_YPGal_1.fastq.gz WT_YPGal_2.fastq.gz RNA_WT_YPGal_thirdrep2021_r1_trimmo_paired.fastq RNA_WT_YPGal_thirdrep2021_r1_trimmo_unpaired.fastq RNA_WT_YPGal_thirdrep2021_r2_trimmo_paired.fastq RNA_WT_YPGal_thirdrep2021_r2_trimmo_unpaired.fastq ILLUMINACLIP:/home/icbs_shared_storage_yod/Program_NGS_sanger17/Trimmomatic-0.36/adapters/TruSeq3-PE-2.fa:2:10:5:1 
+
+#### 2. FastQC
+
+fastqc RNA_WT_YPGal_thirdrep2021_r1_trimmo_paired.fastq 
+fastqc RNA_WT_YPGal_thirdrep2021_r2_trimmo_paired.fastq
+
+#### 3. Mapping by HISAT2
+
+hisat2 -p 6 -q --no-mixed --no-discordant --dta -x /home/peerapat/hisat_index/genome -1 RNA_WT_YPGal_thirdrep2021_r1_trimmo_paired.fastq -2 RNA_WT_YPGal_thirdrep2021_r2_trimmo_paired.fastq -S RNA_WT_YPGal_nomixed_nodis.sam
+
+
+#### 4. Convert Sam to Bam
+#samtools view -bs RNA_WT_YPGal_nomixed_nodis.sam > RNA_WT_YPGal_nomixed_nodis.bam
+
+#### 5. bam sorting
+#samtools sort RNA_WT_YPGal_nomixed_nodis.bam -o RNA_WT_YPGal_nomixed_nodis_sorted.bam
+
+
+#### 4. sort and convert ####  New version of samtools
+samtools sort -o RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted.bam RNA_WT_YPGal_nomixed_nodis.sam
+
+#### 6. Remove duplicate
+
+java -Xmx8g -jar /home/icbs_shared_storage_yod/Program_NGS_sanger17/picard.jar MarkDuplicates INPUT=RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted.bam OUTPUT=RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.bam M=METRICS_FILE=dup.txt VALIDATION_STRINGENCY=LENIENT REMOVE_DUPLICATES=true 2> markdup_stderr_renamed_hisat_dta_nomixed.txt
+
+
+#### 7. Flagstat
+samtools flagstat RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.bam
+
+
+#### 8. Indexing 
+samtools index RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.bam
+
+
+#### 9. RAW/FPKM/TPM/ by StringTie
+
+stringtie -p 6 -G /home/icbs_shared_storage_yod/Reference_genomes_sanger17/Saccharomyces_cerevisiae/UCSC/sacCer3/Annotation/Genes/SacCer3.gtf -e -B -A RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.txt -o RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.gtf RNA_WT_YPGal_thirdrep2021_nomixed_nodis_sorted_rmdup.bam
+
+# Finish at this step
