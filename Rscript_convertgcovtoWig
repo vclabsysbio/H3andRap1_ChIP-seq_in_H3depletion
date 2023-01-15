@@ -1,0 +1,91 @@
+
+chrNUM<-c(1:17);
+chrName<-c("chrI","chrII","chrIII","chrIV","chrV","chrVI","chrVII","chrVIII", "chrIX","chrX","chrXI","chrXII","chrXIII","chrXIV","chrXV","chrXVI","chrM");
+chrLoop<-cbind(chrNUM,chrName);
+(chrLoop);
+#loop
+cloop<-function(a){
+for (i in 1:17){
+temp1<-a[a$V1==chrLoop[i,2],]
+temp2<-temp1[,-1]
+ChromName<-paste("chrom=",chrLoop[i,2],sep="")
+header.t<-c("variableStep",ChromName)
+temp3<-rbind(header.t, temp2)
+if (i == 1){
+temptable<-temp3
+Noti<-paste(i,":Combined",ChromName)
+print(Noti)
+}
+else {
+temptable<-rbind(temptable, temp3)
+Noti<-paste(i,":Combined",ChromName)
+print(Noti)
+}
+}
+return(temptable)		
+};
+#import table
+RAWtable<-read.table("H3_4threp2022TH_divided_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3_4threp2022TH_divided_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_YPD_4threp2022TH_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_YPD_4threp2022TH_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_YPGal_4threp2022TH_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_YPGal_4threp2022TH_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_YPD_4threp2022TH_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_YPD_4threp2022TH_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_YPGal_4threp2022TH_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_YPGal_4threp2022TH_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_YPD_4threp2022TH_default+1.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_YPD_4threp2022TH_default+1.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_YPGal_4threp2022TH_default+1.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_YPGal_4threp2022TH_default+1.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_YPD_4threp2022TH_default+1.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_YPD_4threp2022TH_default+1.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_YPGal_4threp2022TH_default+1.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_YPGal_4threp2022TH_default+1.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_4threp2022TH_divided_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_4threp2022TH_divided_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_4threp2022TH_divided_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_4threp2022TH_divided_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("H3i_H3_4threp2022TH_logdivided_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "H3i_H3_4threp2022TH_logdivided_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
+
+RAWtable<-read.table("WT_H3_4threp2022TH_logdivided_default.gcov", sep="\t");
+test1<-cloop(RAWtable);
+test1[test1$V2=="variableStep",];
+write.table(test1, "WT_H3_4threp2022TH_logdivided_default.wig", sep="\t", quote=FALSE, row.names=FALSE, col.name=FALSE);
