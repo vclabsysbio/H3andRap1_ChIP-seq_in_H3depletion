@@ -1,0 +1,152 @@
+
+#fastQC
+fastqc H3WTGal_1.fq.gz
+fastqc H3WTGal_2.fq.gz
+fastqc H3WTD_1.fq.gz
+fastqc H3WTD_2.fq.gz
+
+fastqc H3H3iGal_1.fq.gz
+fastqc H3H3iGal_2.fq.gz
+fastqc H3H3iD_1.fq.gz
+fastqc H3H3iD_2.fq.gz
+
+#Mapping by defalt  #new H3
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3WTGal_1.fq.gz -2 H3WTGal_2.fq.gz -S WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3WTD_1.fq.gz -2 H3WTD_2.fq.gz -S WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3H3iGal_1.fq.gz -2 H3H3iGal_2.fq.gz -S H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Saccharomyces_cerevisiae/UCSC/sacCer3/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3H3iD_1.fq.gz -2 H3H3iD_2.fq.gz -S H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+
+#Convert sam to bam and sort (SacCer3) 
+samtools sort -o WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+samtools sort -o WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+samtools sort -o H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+samtools sort -o H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33.sam 
+
+#Indexing 
+samtools index WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools index WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools index H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools index H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+
+#Flagstat (SacCer3) 
+samtools flagstat WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools flagstat WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools flagstat H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+samtools flagstat H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam
+
+
+#Calculate Sequecing Depth (SacCer3) #new
+
+sum=$(samtools depth WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam | awk '{sum+=$3;cnt++}END{printf "%.0f", sum}'); echo $sum
+gAvg01=$(awk "BEGIN {print $sum/12157105}"); echo $gAvg01
+export gAvg01
+sum=$(samtools depth WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam | awk '{sum+=$3;cnt++}END{printf "%.0f", sum}'); echo $sum
+gAvg02=$(awk "BEGIN {print $sum/12157105}"); echo $gAvg02
+export gAvg02
+sum=$(samtools depth H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam | awk '{sum+=$3;cnt++}END{printf "%.0f", sum}'); echo $sum
+gAvg03=$(awk "BEGIN {print $sum/12157105}"); echo $gAvg03
+export gAvg03
+sum=$(samtools depth H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam | awk '{sum+=$3;cnt++}END{printf "%.0f", sum}'); echo $sum
+gAvg04=$(awk "BEGIN {print $sum/12157105}"); echo $gAvg04
+export gAvg04
+
+##Arabidopsis mapping
+#Mapping by defalt 
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3WTGal_1.fq.gz -2 H3WTGal_2.fq.gz -S WT_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33.sam
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3WTD_1.fq.gz -2 H3WTD_2.fq.gz -S WT_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33.sam
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3H3iGal_1.fq.gz -2 H3H3iGal_2.fq.gz -S H3i_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33.sam
+bowtie2 -x /mnt/icbs_shared_storage_vc_general/Reference_genomes_sanger17_2021/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/Bowtie2Index/genome --phred33 -p 10 -1 H3H3iD_1.fq.gz -2 H3H3iD_2.fq.gz -S H3i_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33.sam
+
+#Convert sam to bam (Tair10) 
+samtools sort -o WT_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam WT_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33.sam
+samtools sort -o WT_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam WT_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33.sam
+samtools sort -o H3i_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam H3i_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33.sam
+samtools sort -o H3i_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam H3i_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33.sam
+
+#Indexing #new
+samtools index WT_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam
+samtools index WT_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam
+samtools index H3i_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam
+samtools index H3i_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam
+########
+
+#spike in normalization
+sum1=$(samtools depth WT_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam | awk '{sum1+=$3;cnt++}END{printf "%.0f", sum1}'); echo $sum1
+sum2=$(samtools depth WT_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam | awk '{sum2+=$3;cnt++}END{printf "%.0f", sum2}'); echo $sum2
+sum3=$(samtools depth H3i_H3_YPGal_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam | awk '{sum3+=$3;cnt++}END{printf "%.0f", sum3}'); echo $sum3
+sum4=$(samtools depth H3i_H3_YPD_4threp2022TH_bowtie2_Tair10_phred33_sorted.bam | awk '{sum4+=$3;cnt++}END{printf "%.0f", sum4}'); echo $sum4
+
+aFact1=$(awk "BEGIN {print $sum4/$sum1}"); echo $aFact1
+export aFact1
+aFact2=$(awk "BEGIN {print $sum4/$sum2}"); echo $aFact2
+export aFact2
+aFact3=$(awk "BEGIN {print $sum4/$sum3}"); echo $aFact3
+export aFact3
+aFact4=$(awk "BEGIN {print $sum4/$sum4}"); echo $aFact4
+export aFact4
+
+#extract perbase genomecoverage
+bedtools genomecov -split -ibam WT_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam -d > WT_H3_YPGal_4threp2022TH_default_preN.gcov
+perl -ne 'my $gAvg01=$ENV{"gAvg01"};my $aFact1=$ENV{"aFact1"};chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]*$aFact1/$gAvg01."\n";' WT_H3_YPGal_4threp2022TH_default_preN.gcov > WT_H3_YPGal_4threp2022TH_default.gcov
+bedtools genomecov -split -ibam WT_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam -d > WT_H3_YPD_4threp2022TH_default_preN.gcov
+perl -ne 'my $gAvg02=$ENV{"gAvg02"};my $aFact2=$ENV{"aFact2"};chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]*$aFact2/$gAvg02."\n";' WT_H3_YPD_4threp2022TH_default_preN.gcov > WT_H3_YPD_4threp2022TH_default.gcov
+bedtools genomecov -split -ibam  H3i_H3_YPGal_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam -d > H3i_H3_YPGal_4threp2022TH_default_preN.gcov
+perl -ne 'my $gAvg03=$ENV{"gAvg03"};my $aFact3=$ENV{"aFact3"};chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]*$aFact3/$gAvg03."\n";' H3i_H3_YPGal_4threp2022TH_default_preN.gcov > H3i_H3_YPGal_4threp2022TH_default.gcov
+bedtools genomecov -split -ibam H3i_H3_YPD_4threp2022TH_bowtie2_sacCer3_phred33_sorted.bam -d > H3i_H3_YPD_4threp2022TH_default_preN.gcov
+perl -ne 'my $gAvg04=$ENV{"gAvg04"};my $aFact4=$ENV{"aFact4"};chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]*$aFact4/$gAvg04."\n";' H3i_H3_YPD_4threp2022TH_default_preN.gcov > H3i_H3_YPD_4threp2022TH_default.gcov
+
+#psudocount+1
+perl -ne 'chomp($_); @a=split(/\t/,$_); $sum=$a[2]+1; print $a[0]."\t".$a[1]."\t".$sum."\n";' H3i_H3_YPD_4threp2022TH_default.gcov > H3i_H3_YPD_4threp2022TH_default+1.gcov
+perl -ne 'chomp($_); @a=split(/\t/,$_); $sum=$a[2]+1; print $a[0]."\t".$a[1]."\t".$sum."\n";' H3i_H3_YPGal_4threp2022TH_default.gcov > H3i_H3_YPGal_4threp2022TH_default+1.gcov
+perl -ne 'chomp($_); @a=split(/\t/,$_); $sum=$a[2]+1; print $a[0]."\t".$a[1]."\t".$sum."\n";' WT_H3_YPGal_4threp2022TH_default.gcov > WT_H3_YPD_4threp2022TH_default+1.gcov
+perl -ne 'chomp($_); @a=split(/\t/,$_); $sum=$a[2]+1; print $a[0]."\t".$a[1]."\t".$sum."\n";' WT_H3_YPGal_4threp2022TH_default.gcov > WT_H3_YPGal_4threp2022TH_default+1.gcov
+
+#Merging
+cut -f 3 H3i_H3_YPGal_4threp2022TH_default+1.gcov | paste  H3i_H3_YPD_4threp2022TH_default+1.gcov - > H3i_H3_4threp2022TH_merged_default.gcov
+cut -f 3 WT_H3_YPGal_4threp2022TH_default+1.gcov | paste  WT_H3_YPGal_4threp2022TH_default+1.gcov - > WT_H3_4threp2022TH_merged_default.gcov
+
+#divide YPD/YPGal
+perl -ne 'chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]/$a[3]."\n";' H3i_H3_4threp2022TH_merged_default.gcov > H3i_H3_4threp2022TH_divided_default.gcov
+perl -ne 'chomp($_); @a=split(/\t/,$_);print $a[0]."\t".$a[1]."\t".$a[2]/$a[3]."\n";' WT_H3_4threp2022TH_merged_default.gcov > WT_H3_4threp2022TH_divided_default.gcov
+
+#convert YPD/YPGal
+perl -ne 'chomp($_); @a=split(/\t/,$_);$log=log($a[2]/$a[3])/log(2);print $a[0]."\t".$a[1]."\t".$log."\n"' H3i_H3_4threp2022TH_merged_default.gcov > H3i_H3_4threp2022TH_logdivided_default.gcov
+perl -ne 'chomp($_); @a=split(/\t/,$_);$log=log($a[2]/$a[3])/log(2);print $a[0]."\t".$a[1]."\t".$log."\n"' WT_H3_4threp2022TH_merged_default.gcov > WT_H3_4threp2022TH_logdivided_default.gcov
+
+#cut and paste WT to H3i
+cut -f 3 WT_H3_4threp2022TH_divided_default.gcov | paste H3i_H3_4threp2022TH_divided_default.gcov - > H3_4threp2022TH_merged_default.gcov
+
+#divide H3i/WT
+perl -ne 'chomp($_); @a=split(/\t/,$_);$log=log($a[2]/$a[3])/log(2);print $a[0]."\t".$a[1]."\t".$log."\n"' H3_4threp2022TH_merged_default.gcov > H3_4threp2022TH_divided_default.gcov
+
+
+## RUN R script to convert .gcov to wig files
+
+
+#Convert .wig to .bw
+wigToBigWig H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes H3_4threp2022TH_divided_default.bw
+
+wigToBigWig H3i_H3_YPD_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPD_4threp2022TH_default.bw
+
+wigToBigWig H3i_H3_YPGal_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPGal_4threp2022TH_default.bw
+
+wigToBigWig WT_H3_YPD_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPD_4threp2022TH_default.bw
+
+wigToBigWig WT_H3_YPGal_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPGal_4threp2022TH_default.bw
+
+wigToBigWig H3i_H3_YPD_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPD_4threp2022TH_default+1.bw
+
+wigToBigWig H3i_H3_YPGal_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPGal_4threp2022TH_default+1.bw
+
+wigToBigWig WT_H3_YPD_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPD_4threp2022TH_default+1.bw
+
+wigToBigWig WT_H3_YPGal_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPGal_4threp2022TH_default+1.bw
+
+wigToBigWig H3i_H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_4threp2022TH_divided_default.bw
+
+wigToBigWig WT_H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_4threp2022TH_divided_default.bw
+
+wigToBigWig H3i_H3_4threp2022TH_logdivided_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_4threp2022TH_logdivided_default.bw
+
+wigToBigWig WT_H3_4threp2022TH_logdivided_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_4threp2022TH_logdivided_default.bw
+
