@@ -118,3 +118,35 @@ cut -f 3 WT_H3_4threp2022TH_divided_default.gcov | paste H3i_H3_4threp2022TH_div
 
 #divide H3i/WT
 perl -ne 'chomp($_); @a=split(/\t/,$_);$log=log($a[2]/$a[3])/log(2);print $a[0]."\t".$a[1]."\t".$log."\n"' H3_4threp2022TH_merged_default.gcov > H3_4threp2022TH_divided_default.gcov
+
+
+## RUN R script to convert .gcov to wig files
+
+
+#Convert .wig to .bw
+wigToBigWig H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes H3_4threp2022TH_divided_default.bw
+
+wigToBigWig H3i_H3_YPD_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPD_4threp2022TH_default.bw
+
+wigToBigWig H3i_H3_YPGal_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPGal_4threp2022TH_default.bw
+
+wigToBigWig WT_H3_YPD_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPD_4threp2022TH_default.bw
+
+wigToBigWig WT_H3_YPGal_4threp2022TH_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPGal_4threp2022TH_default.bw
+
+wigToBigWig H3i_H3_YPD_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPD_4threp2022TH_default+1.bw
+
+wigToBigWig H3i_H3_YPGal_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_YPGal_4threp2022TH_default+1.bw
+
+wigToBigWig WT_H3_YPD_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPD_4threp2022TH_default+1.bw
+
+wigToBigWig WT_H3_YPGal_4threp2022TH_default+1.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_YPGal_4threp2022TH_default+1.bw
+
+wigToBigWig H3i_H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_4threp2022TH_divided_default.bw
+
+wigToBigWig WT_H3_4threp2022TH_divided_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_4threp2022TH_divided_default.bw
+
+wigToBigWig H3i_H3_4threp2022TH_logdivided_default.wig /home/peerapat/sacCer3.chrom.sizes H3i_H3_4threp2022TH_logdivided_default.bw
+
+wigToBigWig WT_H3_4threp2022TH_logdivided_default.wig /home/peerapat/sacCer3.chrom.sizes WT_H3_4threp2022TH_logdivided_default.bw
+
