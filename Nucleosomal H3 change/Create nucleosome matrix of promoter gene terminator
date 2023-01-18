@@ -1,0 +1,921 @@
+#create matrix and heatmap of individual track 
+#for H3 overall occupancy 
+#05.07.2021 peerapat
+
+library(rtracklayer)
+library(dplyr)
+library(ChIPpeakAnno)
+require(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
+
+txdb<-TxDb.Scerevisiae.UCSC.sacCer3.sgdGene
+geneSC=genes(txdb)
+geneSC3=geneSC[-c(3,4,2238,2239)] #filter overlapgene body
+rangSC3=as.data.frame(ranges(geneSC3))
+colnames(rangSC3)[4]="GeneID"
+setwd("E:/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Result_Heatmap22column_nucleosomepattern")
+
+ov_anno=read.table("Overlapped_Annotation_allgenesyeast_09092021.txt", header = T)
+noov_gene=ov_anno%>%filter(Promoter_Overlap=="No overlap"&Downstream_overlap=="No overlap")
+noov_geneW=left_join(noov_gene, rangSC3, by="GeneID")
+noov_geneW_500=noov_geneW[noov_geneW$width>=500,]
+geneSC3=geneSC3[names(geneSC3)%in%noov_geneW_500$GeneID]
+
+#listBW
+bw=list.files(pattern = ".bw")   
+bw
+b=1
+H3=import.bw(bw[b])
+
+dH3=as.data.frame(H3)
+#dH3$Zscore=scale(H3$score)
+
+#m_sumH3=matrix(NA,nrow=6534,ncol=4)
+#m_sumH3=matrix(NA,nrow=6530,ncol=22)
+m_sumH3_checkov=matrix(NA,nrow=1359,ncol=22) 
+m_sumH3_divlength=matrix(NA,nrow=1359,ncol=22)
+
+
+for (i in 1:length(geneSC3)) {
+  print(i)
+  ### create Grange for promoter #-450 to -401, -400 to -351, -350 to -301, 
+  #-300 to -251, -250 to -201, -200 to -151,
+  #-150 to -101, -100 to -51, -50 to 1
+  #genebody1 TSS to +50, +51 to +100, +101 to +150 
+  #genebody2 (between), 
+  #genebody3 TTS-150 to TTS-101, TTS-100 to TTS-51, TTS-50 to TTS
+  #downstream TTS+1 to TTS+50, TTS+51 to TTS+100, TTS+101 to TTS+150 
+  #TTS+151 to TTS+200, TTS+201 to TTS+250, TTS+251 to TTS+300   
+  Ggene=geneSC3[i,]
+  gene=as.data.frame( Ggene)
+  st=strand(Ggene)
+  
+  ###1#promoter -450 to -401 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-450,gene$start-401)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+401,gene$end+450)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,1]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,1]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,1]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,1]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,1]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,1]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,1]=0
+      m_sumH3_divlength[i,1]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,1]=0
+    m_sumH3_divlength[i,1]=0  }
+  
+  
+  ##2## Promoter -400 to -351################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-400,gene$start-351)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+351,gene$end+400)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,2]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,2]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,2]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,2]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,2]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,2]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,2]=0
+      m_sumH3_divlength[i,2]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,2]=0
+    m_sumH3_divlength[i,2]=0  }
+  
+  
+  ##3## Promoter -350 to -301 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-350,gene$start-301)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+301,gene$end+350)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,3]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,3]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,3]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,3]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,3]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,3]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,3]=0
+      m_sumH3_divlength[i,3]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,3]=0
+    m_sumH3_divlength[i,3]=0  }
+  
+  
+  ##4## Promoter -300 to -251 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-300,gene$start-251)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+251,gene$end+300)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,4]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,4]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,4]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,4]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,4]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,4]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,4]=0
+      m_sumH3_divlength[i,4]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,4]=0
+    m_sumH3_divlength[i,4]=0  }
+  
+  ##5## Promoter -250 to -201 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-250,gene$start-201)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+201,gene$end+250)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,5]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,5]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,5]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,5]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,5]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,5]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,5]=0
+      m_sumH3_divlength[i,5]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,5]=0
+    m_sumH3_divlength[i,5]=0  }
+  
+  ##6## Promoter -200 to -151 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-200,gene$start-151)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+151,gene$end+200)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,6]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,6]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,6]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,6]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,6]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,6]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,6]=0
+      m_sumH3_divlength[i,6]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,6]=0
+    m_sumH3_divlength[i,6]=0  }
+  
+  
+  ##7## Promoter -150 to -101 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-150,gene$start-101)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+101,gene$end+150)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,7]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,7]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,7]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,7]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,7]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,7]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,7]=0
+      m_sumH3_divlength[i,7]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,7]=0
+    m_sumH3_divlength[i,7]=0  }
+  
+  
+  ##8## Promoter -100 to -51 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-100,gene$start-51)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+51,gene$end+100)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,8]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,8]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,8]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,8]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,8]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,8]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,8]=0
+      m_sumH3_divlength[i,8]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,8]=0
+    m_sumH3_divlength[i,8]=0  }
+  
+  
+  ##9## Promoter -50 to -1 ################################
+  if(runValue(st)=="+"){
+    up=data.frame(gene$seqnames,gene$start-50,gene$start-1)
+  }else{
+    up=data.frame(gene$seqnames,gene$end+1,gene$end+50)
+  }
+  colnames(up)=c("seqnames","start","end")  
+  upgene=makeGRangesFromDataFrame(up)
+  
+  if(length(subsetByOverlaps(geneSC3,upgene))==0){
+    ii=findOverlaps(H3,upgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,9]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,9]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,upgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,upgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///upgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        start(upgene)=start(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,9]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,9]=sum(dd$score)/width(upgene) #score_up
+      }else{
+        end(upgene)=end(upgene)-dist
+        ii=findOverlaps(H3,upgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,9]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,9]=sum(dd$score)/width(upgene) #score_up
+      }
+    }else{#Full or over overlap
+      m_sumH3_checkov[i,9]=0
+      m_sumH3_divlength[i,9]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,9]=0
+    m_sumH3_divlength[i,9]=0  }
+  
+  
+  #####gene body 1 parts TSS to 149 bp ################################
+  if (width(Ggene)>300){  #for gene >300 can separate window
+    ### TSS to +50
+    if(runValue(st)=="+"){
+      g1=data.frame(gene$seqnames,gene$start,gene$start+50)
+    }else{
+      g1=data.frame(gene$seqnames,gene$end-50,gene$end)
+    }
+    colnames(g1)=c("seqnames","start","end")  
+    g1=makeGRangesFromDataFrame(g1)
+    
+    ii=findOverlaps(H3,g1)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,10]=sum(dd$score) #score_g1
+    m_sumH3_divlength[i,10]=sum(dd$score)/50
+    
+    ### +51 to +100
+    if(runValue(st)=="+"){
+      g1=data.frame(gene$seqnames,gene$start+51,gene$start+100)
+    }else{
+      g1=data.frame(gene$seqnames,gene$end-100,gene$end-51)
+    }
+    colnames(g1)=c("seqnames","start","end")  
+    g1=makeGRangesFromDataFrame(g1)
+    
+    ii=findOverlaps(H3,g1)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,11]=sum(dd$score) #score_g1
+    m_sumH3_divlength[i,11]=sum(dd$score)/50
+    
+    ### +101 to +150 
+    if(runValue(st)=="+"){
+      g1=data.frame(gene$seqnames,gene$start+101,gene$start+150)
+    }else{
+      g1=data.frame(gene$seqnames,gene$end-150,gene$end-101)
+    }
+    colnames(g1)=c("seqnames","start","end")  
+    g1=makeGRangesFromDataFrame(g1)
+    
+    ii=findOverlaps(H3,g1)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,12]=sum(dd$score) #score_g1
+    m_sumH3_divlength[i,12]=sum(dd$score)/50
+    
+    ######### Genebody 2 genecentral #############################
+    if(runValue(st)=="+"){
+      g1=data.frame(gene$seqnames,gene$start+151,gene$end-151)
+    }else{
+      g1=data.frame(gene$seqnames,gene$start+151,gene$end-151)
+    }
+    colnames(g1)=c("seqnames","start","end")  
+    g1=makeGRangesFromDataFrame(g1)
+    
+    ii=findOverlaps(H3,g1)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,13]=sum(dd$score) #score_g1
+    m_sumH3_divlength[i,13]=sum(dd$score)/width(g1)
+    
+    ####genebody 3 TTS-150 to TTS-101 #########################################
+    if(runValue(st)=="+"){
+      g2=data.frame(gene$seqnames,gene$end-150,gene$end-101)
+    }else {
+      g2=data.frame(gene$seqnames,gene$start+101,gene$start+150)
+    }
+    colnames(g2)=c("seqnames","start","end")  
+    g2=makeGRangesFromDataFrame(g2)
+    
+    ii=findOverlaps(H3,g2)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,14]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,14]=sum(dd$score)/50
+    
+    ### TTS-100 to TTS-51
+    if(runValue(st)=="+"){
+      g2=data.frame(gene$seqnames,gene$end-100,gene$end-51)
+    }else {
+      g2=data.frame(gene$seqnames,gene$start+51,gene$start+100)
+    }
+    colnames(g2)=c("seqnames","start","end")  
+    g2=makeGRangesFromDataFrame(g2)
+    
+    ii=findOverlaps(H3,g2)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,15]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,15]=sum(dd$score)/50
+    
+    ### TTS-50 to TTS
+    if(runValue(st)=="+"){
+      g2=data.frame(gene$seqnames,gene$end-50,gene$end)
+    }else {
+      g2=data.frame(gene$seqnames,gene$start,gene$start+50)
+    }
+    colnames(g2)=c("seqnames","start","end")  
+    g2=makeGRangesFromDataFrame(g2)
+    
+    ii=findOverlaps(H3,g2)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,16]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,16]=sum(dd$score)/50
+  }
+  else {
+    #for gene lenght <=300 
+    g2=Ggene
+    ii=findOverlaps(H3,g2)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,10]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,10]=sum(dd$score)/width(g2)
+    
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,11]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,11]=sum(dd$score)/width(g2)
+    
+    m_sumH3_checkov[i,12]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,12]=sum(dd$score)/width(g2)
+    
+    m_sumH3_checkov[i,13]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,13]=sum(dd$score)/width(g2)
+    
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,14]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,14]=sum(dd$score)/width(g2)
+    
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,15]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,15]=sum(dd$score)/width(g2)
+    
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,16]=sum(dd$score) #score_g2
+    m_sumH3_divlength[i,16]=sum(dd$score)/width(g2)
+  }
+  
+  #downstream TTS+1 to TTS+50, TTS+51 to TTS+100, TTS+101 to TTS+150 
+  #TTS+151 to TTS+200, TTS+201 to TTS+250, TTS+251 to TTS+300 
+  
+  ####  #downstream TTS+1 to TSS+50 bp###########
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+1,gene$end+50)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-50,gene$start-1)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,17]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,17]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,17]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,17]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,17]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,17]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,17]=0
+      m_sumH3_divlength[i,17]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,17]=0
+    m_sumH3_divlength[i,17]=0
+  }
+  
+  ## TTS+51 to TTS+100 
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+51,gene$end+100)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-100,gene$start-51)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,18]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,18]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,18]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,18]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,18]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,18]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,18]=0
+      m_sumH3_divlength[i,18]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,18]=0
+    m_sumH3_divlength[i,18]=0
+  }
+  
+  ## TTS+101 to TTS+150 
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+101,gene$end+150)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-150,gene$start-101)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,19]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,19]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,19]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,19]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,19]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,19]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,19]=0
+      m_sumH3_divlength[i,19]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,19]=0
+    m_sumH3_divlength[i,19]=0
+  }
+  
+  
+  ####  #downstream TTS+151 to TTS+200, 
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+151,gene$end+200)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-200,gene$start-151)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,20]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,20]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,20]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,20]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,20]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,20]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,20]=0
+      m_sumH3_divlength[i,20]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,20]=0
+    m_sumH3_divlength[i,20]=0
+  }
+  
+  ####  #downstream TTS+201 to TTS+250
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+201,gene$end+250)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-250,gene$start-201)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,21]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,21]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,21]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,21]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,21]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,21]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,21]=0
+      m_sumH3_divlength[i,21]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,21]=0
+    m_sumH3_divlength[i,21]=0
+  }
+  
+  ####  #downstream  TTS+251 to TTS+300 
+  if(runValue(st)=="+"){
+    down=data.frame(gene$seqnames,gene$end+251,gene$end+300)
+  }else{
+    down=data.frame(gene$seqnames,gene$start-300,gene$start-251)
+  }
+  colnames(down)=c("seqnames","start","end")  
+  downgene=makeGRangesFromDataFrame(down)
+  
+  if(length(subsetByOverlaps(geneSC3,downgene))==0){
+    ii=findOverlaps(H3,downgene)
+    #Used query hit from findOverlaps
+    dd=dH3[queryHits(ii),]
+    m_sumH3_checkov[i,22]=sum(dd$score) #score_up
+    m_sumH3_divlength[i,22]=sum(dd$score)/50 #score_up
+  }
+  else if (length(subsetByOverlaps(geneSC3,downgene))==1){
+    fov=findOverlapsOfPeaks(geneSC3,downgene)
+    dist=max(fov$overlappingPeaks$`geneSC3///downgene`$shortestDistance)
+    if(dist<50){ #not full overlap
+      if(runValue(st)=="+"){
+        end(downgene)=end(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,22]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,22]=sum(dd$score)/width(downgene) #score_up
+      }else{
+        start(downgene)=start(downgene)-dist
+        ii=findOverlaps(H3,downgene)
+        #Used query hit from findOverlaps
+        dd=dH3[queryHits(ii),]
+        m_sumH3_checkov[i,22]=sum(dd$score) #score_up
+        m_sumH3_divlength[i,22]=sum(dd$score)/width(downgene) #score_up
+      }
+    }else{  #Full or over overlap
+      m_sumH3_checkov[i,22]=0
+      m_sumH3_divlength[i,22]=0
+    }
+    
+  }
+  else{ #overpeak more than 1
+    m_sumH3_checkov[i,22]=0
+    m_sumH3_divlength[i,22]=0
+  }
+  
+  
+}
+
+colnames(m_sumH3_divlength)=c("Promoter1","Promoter2","Promoter3","Promoter4","Promoter5","Promoter6",
+                              "Promoter7","Promoter8","Promoter9","Genebody1","Genebody2","Genebody3",
+                              "Genebody","Genebody5","Genebody6","Genebody7",
+                              "Downstream1","Downstream2", "Downstream3","Downstream4", "Downstream5","Downstream6")
+colnames(m_sumH3_checkov)=c("Promoter1","Promoter2","Promoter3","Promoter4","Promoter5","Promoter6",
+                            "Promoter7","Promoter8","Promoter9","Genebody1","Genebody2","Genebody3",
+                            "Genebody","Genebody5","Genebody6","Genebody7",
+                            "Downstream1","Downstream2", "Downstream3","Downstream4", "Downstream5","Downstream6")
+
+
+# Get gene name from GeneID
+library(org.Sc.sgd.db)
+sgdgene<-org.Sc.sgd.db
+cols<-c("GENENAME","SGD")
+Genetable<-biomaRt::select(sgdgene, keys = geneSC3$gene_id ,columns = cols, keytype = "ORF")
+colnames(Genetable)<-c("Gene.ID","GENENAME","SGD")
+
+m_sumH3_checkov=as.data.frame(m_sumH3_checkov)
+m_sumH3_checkov$Gene.ID=geneSC3$gene_id
+Allrow<-left_join(m_sumH3_checkov,Genetable,by="Gene.ID")
+Allrow[is.na(Allrow$GENENAME),"GENENAME"]<-Allrow[is.na(Allrow$GENENAME),"Gene.ID"]
+rownames(Allrow)=Allrow$GENENAME
+
+m_sumH3_divlength=as.data.frame(m_sumH3_divlength)
+m_sumH3_divlength$Gene.ID=geneSC3$gene_id
+Allrow2<-left_join(m_sumH3_divlength,Genetable,by="Gene.ID")
+Allrow2[is.na(Allrow2$GENENAME),"GENENAME"]<-Allrow2[is.na(Allrow2$GENENAME),"Gene.ID"]
+rownames(Allrow2)=Allrow2$GENENAME
+
+
+bname=gsub(".bw","",bw[b])
+bname
+write.table(Allrow,paste0("./sumscore_ChIP_H3spikein_",bname,"checkOV_22columns_08122022.txt"))
+write.table(Allrow2,paste0("./sumscore_ChIP_H3spikein_",bname,"checkOVlenght_22columns_08122022.txt"))
+
+
