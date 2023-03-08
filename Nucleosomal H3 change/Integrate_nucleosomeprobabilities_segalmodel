@@ -1,0 +1,131 @@
+
+rm(list=ls())
+#16.09.2018
+#Creat plot with different probability of Segal model with depletion value
+library(rtracklayer)
+
+#load log divided single base coverage file
+setwd("E:/rep4Thailand/H3-ChIP/fixMappedH3/H3rep4")
+logch<-import.bw("H3_4threp2022TH_divided_default.bw")
+d_logch<-as.data.frame(logch)
+
+###################################################################
+#Start setting variables
+Pro_value<-c("0-0.99","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9")
+
+vScore<-list()
+
+chr<- c("chr1","chr2","chr3","chr4","chr5","chr6","chr7",
+        "chr8", "chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17")
+
+lchr<-c("chrI","chrII","chrIII","chrIV","chrV","chrVI","chrVII",
+        "chrVIII", "chrIX","chrX","chrXI","chrXII","chrXIII","chrXIV","chrXV","chrXVI","chrM")
+
+Probb<-c("0","0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9")
+
+Probb1<-c("0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0")
+
+#load Saccer3 version of Probability 
+setwd("/home/peerapat/Desktop/Analysis/segal_model/litovertosacCer3/")
+setwd("F:/H3i Project/segal_model/litovertosacCer3")
+file_p<-list.files()
+
+for (w in 1:16) {
+  print(paste0("*******Chr_",w,"********"))
+  Prob<-read.table(file_p[w])
+  colnames(Prob)<-c("chr","start","end","score")
+  Prob[,3]<-Prob[,2]
+  Prob1<-Prob[,-5]
+  G_Prob<-makeGRangesFromDataFrame(Prob1,keep.extra.columns = T)
+  
+  ####processes for extraction 
+  #Probability  
+  
+  for (i in 1:10) {
+    print(i)
+    if (w==1){
+      P<-Prob1[Prob1$score>Probb[i]&Prob1$score<=Probb1[i],]
+      #ifelse(length(levels(Prob1$chr))==1,print("1_levels"),print("Bug_JAAAAAAAAAAAAA"))
+      G_P<-makeGRangesFromDataFrame(P)
+      log_chr<-d_logch[d_logch$seqnames==lchr[w],]
+      #log_chr<-G_logch[seqnames(G_logch)==lchr[i]]
+      match_log<-log_chr[log_chr$start%in%P$start,]
+      #I<-findOverlaps(G_P,log_chr)
+      #loghit<-log_chr[subjectHits(I),]
+      #vScore[[i]]<-loghit$logdivB
+      vScore[[i]]<-match_log$score
+    }
+    else{
+      P<-Prob1[Prob1$score>Probb[i]&Prob1$score<=Probb1[i],]
+      #ifelse(length(levels(Prob1$chr))==1,print("1_levels"),print("Bug_JAAAAAAAAAAAAA"))
+      G_P<-makeGRangesFromDataFrame(P)
+      log_chr<-d_logch[d_logch$seqnames==lchr[w],]
+      #log_chr<-G_logch[seqnames(G_logch)==lchr[i]]
+      match_log<-log_chr[log_chr$start%in%P$start,]
+      #I<-findOverlaps(G_P,log_chr)
+      #loghit<-log_chr[subjectHits(I),]
+      #vScore[[i]]<-append(loghit$logdivB,vScore[[i]])
+      vScore[[i]]<-append(match_log$score,vScore[[i]])
+    }
+  }
+  
+}
+
+############### Zero probability###################################
+#No 0
+######################################################
+library("BSgenome.Scerevisiae.UCSC.sacCer3")
+s<-as.data.frame(seqlengths(Scerevisiae))
+sum(s)
+#> 87367+1083/12157105*100 loss 0.7275581 %
+
+
+######### Create box/violin plot ###############
+library(ggplot2)
+library(reshape2)
+#setwd("/home/peerapat/Desktop/FileResutDanpos2/SI_1/pooled")
+#setwd("F:/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Result_H3depletion_rep3_fromBW")
+setwd("E:/rep4Thailand/H3-ChIP/Downstream analysis/H3depletion_foldchange")
+
+b1<-data.frame(group="0 to 0.1",value=vScore[[1]])
+b2<-data.frame(group="0.1 to 0.2",value=vScore[[2]])
+b3<-data.frame(group="0.2 to 0.3",value=vScore[[3]])
+b4<-data.frame(group="0.3 to 0.4",value=vScore[[4]])
+b5<-data.frame(group="0.4 to 0.5",value=vScore[[5]])
+b6<-data.frame(group="0.5 to 0.6",value=vScore[[6]])
+b7<-data.frame(group="0.6 to 0.7",value=vScore[[7]])
+b8<-data.frame(group="0.7 to 0.8",value=vScore[[8]])
+b9<-data.frame(group="0.8 to 0.9",value=vScore[[9]])
+b10<-data.frame(group="0.9 to 1.0",value=vScore[[10]])
+
+data<-rbind(b1,b2,b3,b4,b5,b6,b7,b8,b9,b10)
+colnames(data)<-c("probability","fold_changed")
+l<-as.data.frame(sapply(vScore,mean))
+dp<-as.data.frame(Pro_value)
+dl<-cbind(dp,l)
+colnames(dl)<-c("Prob","mean")
+
+stat_box_data <- function(y, upper_limit = max(iris$Sepal.Length) * 1.15) {
+  return( 
+    data.frame(
+      y = 0.2 * upper_limit,
+      label = paste('count =', length(y), '\n',
+                    'mean =', round(mean(y), 1), '\n')
+    )
+  )
+}
+
+ggplot(data= data, aes(x=probability,y=fold_changed, fill=probability))+
+  geom_violin()+stat_summary(fun.y=median, geom="point", size=2, color="black")+
+  theme(axis.text=element_text(size=12),axis.title=element_text(size=14,face="bold"))+
+  ggtitle("Normalized-logchange classified by probability model 4th rep")+
+  theme(plot.title = element_text(size=15,hjust = 0.5))+geom_hline(yintercept = 0, linetype="dashed")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")+
+  stat_summary(fun.data=stat_box_data,geom = "text", hjust=0.5,vjust=0.9)
+
+
+ggsave("Segal_model2006_rep4H3_15012023.png", width = 35, height = 20, units = "cm")
+
+##################### END ###########################
+
+
