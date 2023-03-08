@@ -1,0 +1,4 @@
+
+
+
+python3 DANPOS3/danpos.py dpos bam -c 54995957 -o /mnt/d/1VClab/2022/Rep4ChIPH3_BAM/Result_danpos3 -m 1
