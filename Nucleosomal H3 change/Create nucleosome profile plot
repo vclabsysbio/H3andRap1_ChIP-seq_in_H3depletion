@@ -1,0 +1,389 @@
+#14.12.2022
+##Profile 500+-500 bp from Z-score clustering
+#02.08.2021
+library(ComplexHeatmap)
+library(rtracklayer)
+library(circlize)
+library(ggplot2)
+library(reshape2)
+#library(gridExtra)
+library(ggpubr)
+library(dplyr)
+
+### Heatmap ###
+rm(list=ls())
+
+###1. Import DPN OPN annotated bt Barkai
+#setwd("/media/peerapat/Backup Plus/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Results_downstream/")
+setwd("E:/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Downstream_codesR")
+
+barkai=read.table("DPN_OPN_gene_Naama22082018",stringsAsFactors = F )
+colnames(barkai)=c("DPN","OPN")
+
+DPN=as.data.frame(barkai[1:494,1],stringsAsFactors = F)
+DPN$promoter="DPN"
+colnames(DPN)=c("Gene","Promoter")
+OPN=as.data.frame(barkai[1:544,2],stringsAsFactors = F)
+OPN$promoter="OPN"
+colnames(OPN)=c("Gene","Promoter")
+DPNOPN=rbind(DPN,OPN)
+# gene in DPN OPN = 1038
+
+
+
+################################
+# line plot profile 
+require(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
+txdb<-TxDb.Scerevisiae.UCSC.sacCer3.sgdGene
+geneSC3=genes(txdb)
+rangSC3=as.data.frame(ranges(geneSC3))
+colnames(rangSC3)[4]="GeneID"
+setwd("E:/rep4Thailand/H3-ChIP/Downstream analysis/H3_Heatmap22columns/")
+ov_anno=read.table("Overlapped_Annotation_allgenesyeast_09092021.txt", header = T)
+noov_gene=ov_anno%>%filter(Promoter_Overlap=="No overlap"&Downstream_overlap=="No overlap")
+noov_geneW=left_join(noov_gene, rangSC3, by="GeneID")
+noov_geneW_500=noov_geneW[noov_geneW$width>=500,]
+geneSC3=geneSC3[names(geneSC3)%in%noov_geneW_500$GeneID]
+
+
+setwd("E:/rep4Thailand/H3-ChIP/Downstream analysis/H3_Heatmap22columns/Profile")
+list.files()
+#rep1
+pWTG=read.table("Profile_up500down300_WT_H3_YPGal_SI_10_default+1_14122022.txt")
+pWTD=read.table("Profile_up500down300_WT_H3_YPD_SI_10_default+1_14122022.txt")
+pHiG=read.table("Profile_up500down300_H3i_H3_YPGal_SI_10_default+1_14122022.txt")
+pHiD=read.table("Profile_up500down300_H3i_H3_YPD_SI_10_default+1_14122022.txt")
+#rep3
+pWTG=read.table("Profile_up500down300_WT_H3_YPGal_thirdrep2021TH_default+1_14122022.txt")
+pWTD=read.table("Profile_up500down300_WT_H3_YPD_thirdrep2021TH_default+1_14122022.txt")
+pHiG=read.table("Profile_up500down300_H3i_H3_YPGal_thirdrep2021TH_default+1_14122022.txt")
+pHiD=read.table("Profile_up500down300_H3i_H3_YPD_thirdrep2021TH_default+1_14122022.txt")
+#rep4
+pWTG=read.table("Profile_up500down300_WT_H3_YPGal_4threp2022TH_default+1_14122022.txt")
+pWTD=read.table("Profile_up500down300_WT_H3_YPD_4threp2022TH_default+1_14122022.txt")
+pHiG=read.table("Profile_up500down300_H3i_H3_YPGal_4threp2022TH_default+1_14122022.txt")
+pHiD=read.table("Profile_up500down300_H3i_H3_YPD_4threp2022TH_default+1_14122022.txt")
+
+rownames(pWTG)=geneSC3$gene_id
+rownames(pWTD)=geneSC3$gene_id
+rownames(pHiG)=geneSC3$gene_id
+rownames(pHiD)=geneSC3$gene_id
+
+col_L=seq(-500,300)
+col_L=col_L[-501]
+colnames(pWTG)=col_L
+colnames(pWTD)=col_L
+colnames(pHiG)=col_L
+colnames(pHiD)=col_L
+
+pWTG=scale(pWTG)
+pWTD=scale(pWTD)
+pHiG=scale(pHiG)
+pHiD=scale(pHiD)
+
+#DPN
+DPN_WG=pWTG[rownames(pWTG)%in%DPNOPN[DPNOPN$Promoter%in%"DPN","Gene"],]
+DPN_WD=pWTD[rownames(pWTD)%in%DPNOPN[DPNOPN$Promoter%in%"DPN","Gene"],]
+DPN_hG=pHiG[rownames(pHiG)%in%DPNOPN[DPNOPN$Promoter%in%"DPN","Gene"],]
+DPN_hD=pHiD[rownames(pHiD)%in%DPNOPN[DPNOPN$Promoter%in%"DPN","Gene"],]
+mDPN_WG=colMeans(DPN_WG)
+mDPN_WD=colMeans(DPN_WD)
+mDPN_HG=colMeans(DPN_hG)
+mDPN_HD=colMeans(DPN_hD)
+#OPN
+OPN_WG=pWTG[rownames(pWTG)%in%DPNOPN[DPNOPN$Promoter%in%"OPN","Gene"],]
+OPN_WD=pWTD[rownames(pWTD)%in%DPNOPN[DPNOPN$Promoter%in%"OPN","Gene"],]
+OPN_hG=pHiG[rownames(pHiG)%in%DPNOPN[DPNOPN$Promoter%in%"OPN","Gene"],]
+OPN_hD=pHiD[rownames(pHiD)%in%DPNOPN[DPNOPN$Promoter%in%"OPN","Gene"],]
+mOPN_WG=colMeans(OPN_WG)
+mOPN_WD=colMeans(OPN_WD)
+mOPN_HG=colMeans(OPN_hG)
+mOPN_HD=colMeans(OPN_hD)
+
+#Other
+N_WG=pWTG[!rownames(pWTG)%in%DPNOPN$Gene,]
+N_WD=pWTD[!rownames(pWTD)%in%DPNOPN$Gene,]
+N_hG=pHiG[!rownames(pHiG)%in%DPNOPN$Gene,]
+N_hD=pHiD[!rownames(pHiD)%in%DPNOPN$Gene,]
+mN_WG=colMeans(N_WG)
+mN_WD=colMeans(N_WD)
+mN_HG=colMeans(N_hG)
+mN_HD=colMeans(N_hD)
+
+
+
+#### GGplot from heatmap clustering ####
+#import matrix WT YPGal rep1 as a reference of cluster
+#setwd("F:/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Result_Heatmap22column_nucleosomepattern")
+#setwd("/media/peerapat/Backup Plus/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/Result_Heatmap22column_nucleosomepattern")
+setwd("E:/rep4Thailand/H3-ChIP/Downstream analysis/H3_Heatmap22columns/")
+
+ov_anno=read.table("Overlapped_Annotation_allgenesyeast_09092021.txt", header = T)
+noov_gene=ov_anno%>%filter(Promoter_Overlap=="No overlap"&Downstream_overlap=="No overlap")
+
+WTYPG=read.table("sumscore_ChIP_H3spikein_WT_H3_YPGal_SI_10_default+1checkOVlenght_22columns_08122022.txt")
+WTYPG$gene=rownames(WTYPG)
+rownames(WTYPG)=WTYPG$Gene.ID
+WTYPG2=WTYPG[order(WTYPG$Gene.ID),]
+
+WTYPG3=WTYPG2[!rowSums(WTYPG2[,1:22])==0,] #WTYPG3 nrow =1598 
+WTYPG3=WTYPG3[WTYPG3$Gene.ID%in%noov_geneW_500$GeneID,]
+tw=t(WTYPG3[,1:22])
+zwtg=scale(tw)
+Z_WTYPG=t(zwtg)
+coln=c("Promoter1","Promoter2","Promoter3","Promoter4",
+       "Promoter5","Promoter6","Promoter7","Promoter8",
+       "Promoter9","Genebody1","Genebody2","Genebody3",
+       "Genecenter","Genetail1","Genetail2","Genetail3",
+       "Downstream1","Downstream2","Downstream3",
+       "Downstream4","Downstream5","Downstream6")
+colnames(Z_WTYPG)=coln
+
+#cluster
+dsclust=dist(Z_WTYPG)   # use WT YPGal as the control condition
+clust=hclust(dsclust, method = "mcquitty")
+
+cl_members <- cutree(tree = clust, k = 7)
+#plot(clust)
+
+# group from hratmap
+# G1 = n 28 genes 
+# G2 = n 303 genes
+# G3 = n 232 genes
+# G4 = n 113 genes
+# G5 = n 118 genes
+# G6 = n 66 genes 
+# G7 = n 499 genes 
+
+
+g_clust=cutree(clust,k=7) #cuttree to k group
+#For check cluter number and match
+
+dclust=as.data.frame(g_clust) # change cluter number to dataframe
+#use for check original cluster members to regroup
+WG1=pWTG[rownames(pWTG)%in%rownames(dclust)[dclust$g_clust==7],]
+nrow(WG1)
+
+#dclust[dclust$g_clust==1,"new"]=7
+#dclust[dclust$g_clust==2,"new"]=4
+#dclust[dclust$g_clust==3,"new"]=2
+#dclust[dclust$g_clust==4,"new"]=3
+#dclust[dclust$g_clust==5,"new"]=1
+#dclust[dclust$g_clust==6,"new"]=5
+#dclust[dclust$g_clust==7,"new"]=6
+
+#cluster according to VC 
+dclust=as.data.frame(g_clust) 
+dclust[dclust$g_clust==1,"new"]=5
+dclust[dclust$g_clust==2,"new"]=1
+dclust[dclust$g_clust==3,"new"]=2
+dclust[dclust$g_clust==4,"new"]=5
+dclust[dclust$g_clust==5,"new"]=3
+dclust[dclust$g_clust==6,"new"]=4
+dclust[dclust$g_clust==7,"new"]=3
+
+
+
+#cluster1
+WG1=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==1,]),]
+WD1=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==1,]),]
+hG1=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==1,]),]
+hD1=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==1,]),]
+mWG1=colMeans(WG1)
+mWD1=colMeans(WD1)
+mhG1=colMeans(hG1)
+mhD1=colMeans(hD1)
+#1
+m1=rbind(mWG1,mWD1,mhG1,mhD1)
+dm1=as.data.frame(m1)
+dm1$conditions=row.names(dm1)
+melt_m1=melt(dm1)
+melt_m1$conditions=factor(melt_m1$conditions, levels = c("mWG1","mWD1","mhG1","mhD1"))
+
+gm1=ggplot(melt_m1,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster1")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20),)+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+#cluster2
+WG2=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==2,]),]
+WD2=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==2,]),]
+hG2=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==2,]),]
+hD2=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==2,]),]
+mWG2=colMeans(WG2)
+mWD2=colMeans(WD2)
+mhG2=colMeans(hG2)
+mhD2=colMeans(hD2)
+#2
+m2=rbind(mWG2,mWD2,mhG2,mhD2)
+dm2=as.data.frame(m2)
+dm2$conditions=row.names(dm2)
+melt_m2=melt(dm2)
+melt_m2$conditions=factor(melt_m2$conditions, levels = c("mWG2","mWD2","mhG2","mhD2"))
+
+
+gm2=ggplot(melt_m2,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster2")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+#cluster3
+WG3=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==3,]),]
+WD3=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==3,]),]
+hG3=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==3,]),]
+hD3=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==3,]),]
+mWG3=colMeans(WG3)
+mWD3=colMeans(WD3)
+mhG3=colMeans(hG3)
+mhD3=colMeans(hD3)
+#3
+m3=rbind(mWG3,mWD3,mhG3,mhD3)
+dm3=as.data.frame(m3)
+dm3$conditions=row.names(dm3)
+melt_m3=melt(dm3)
+melt_m3$conditions=factor(melt_m3$conditions, levels = c("mWG3","mWD3","mhG3","mhD3"))
+
+
+gm3=ggplot(melt_m3,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster3")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+#cluster4
+WG4=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==4,]),]
+WD4=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==4,]),]
+hG4=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==4,]),]
+hD4=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==4,]),]
+mWG4=colMeans(WG4)
+mWD4=colMeans(WD4)
+mhG4=colMeans(hG4)
+mhD4=colMeans(hD4)
+#4
+m4=rbind(mWG4,mWD4,mhG4,mhD4)
+dm4=as.data.frame(m4)
+dm4$conditions=row.names(dm4)
+melt_m4=melt(dm4)
+melt_m4$conditions=factor(melt_m4$conditions, levels = c("mWG4","mWD4","mhG4","mhD4"))
+
+
+gm4=ggplot(melt_m4,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster4")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+
+#cluster5
+WG5=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==5,]),]
+WD5=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==5,]),]
+hG5=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==5,]),]
+hD5=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==5,]),]
+mWG5=colMeans(WG5)
+mWD5=colMeans(WD5)
+mhG5=colMeans(hG5)
+mhD5=colMeans(hD5)
+#5
+m5=rbind(mWG5,mWD5,mhG5,mhD5)
+dm5=as.data.frame(m5)
+dm5$conditions=row.names(dm5)
+melt_m5=melt(dm5)
+melt_m5$conditions=factor(melt_m5$conditions, levels = c("mWG5","mWD5","mhG5","mhD5"))
+
+
+gm5=ggplot(melt_m5,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster5")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+
+#cluster6
+WG6=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==6,]),]
+WD6=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==6,]),]
+hG6=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==6,]),]
+hD6=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==6,]),]
+mWG6=colMeans(WG6)
+mWD6=colMeans(WD6)
+mhG6=colMeans(hG6)
+mhD6=colMeans(hD6)
+#DPN
+m6=rbind(mWG6,mWD6,mhG6,mhD6)
+dm6=as.data.frame(m6)
+dm6$conditions=row.names(dm6)
+melt_m6=melt(dm6)
+melt_m6$conditions=factor(melt_m6$conditions, levels = c("mWG6","mWD6","mhG6","mhD6"))
+
+gm6=ggplot(melt_m6,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster6")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+
+#cluster7
+WG7=pWTG[rownames(pWTG)%in%rownames(dclust[dclust$new==7,]),]
+WD7=pWTD[rownames(pWTD)%in%rownames(dclust[dclust$new==7,]),]
+hG7=pHiG[rownames(pHiG)%in%rownames(dclust[dclust$new==7,]),]
+hD7=pHiD[rownames(pHiD)%in%rownames(dclust[dclust$new==7,]),]
+mWG7=colMeans(WG7)
+mWD7=colMeans(WD7)
+mhG7=colMeans(hG7)
+mhD7=colMeans(hD7)
+#DPN
+m7=rbind(mWG7,mWD7,mhG7,mhD7)
+dm7=as.data.frame(m7)
+dm7$conditions=row.names(dm7)
+melt_m7=melt(dm7)
+melt_m7$conditions=factor(melt_m7$conditions, levels = c("mWG7","mWD7","mhG7","mhD7"))
+
+gm7=ggplot(melt_m7,aes(variable,value,group=conditions,color=conditions))+
+  geom_line(size=1.5)+xlab("Positions")+ylab("Zscore of normalized H3 ChIP")+
+  ggtitle("Cluster7")+theme_classic()+
+  theme(plot.title = element_text(hjust = 0.5, size=20))+ylim(-1,1)+
+  scale_x_discrete(breaks=c(-450,-300,-150, 1, 150,300))+
+  geom_vline(xintercept=c(50,200,350,501,651), linetype="dashed", color = "grey",size=0.6)+
+  scale_color_manual(labels=c("WT YPGal","WT YPD","H3i YPGal","H3i YPD"),
+                     values=c("#cb181d","#fb6a4a","#993404","#fed98e"))
+
+
+#grid.arrange(gm1,gm2,gm3,gm4,gm5,gm6,nrow = 2, ncol=3)
+#ggarrange(gm1,gm2,gm3,gm4,gm5,gm6,gm7, nrow = 2, ncol=4)
+ggarrange(gm1,gm2,gm3,gm4,gm5, nrow = 2, ncol=3)
+
+setwd("E:/rep4Thailand/H3-ChIP/Downstream analysis/H3_Heatmap22columns/profile")
+ggsave("Profile500up300downZscore_5newclusterby4conditions_ChIPH3rep1_22122022.png", 
+       width = 50, height = 30, units = "cm")
+
+
+
+###Write gene name from 6 clusters to do GO 
+writeLines(rownames(dclust[dclust$new==1,]),"Gene_6newcluster1_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==2,]),"Gene_6newcluster2_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==3,]),"Gene_6newcluster3_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==4,]),"Gene_6newcluster4_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==5,]),"Gene_6newcluster5_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==6,]),"Gene_6newcluster6_WTYPGal_ChIPH3_rep1_14122022.txt")
+writeLines(rownames(dclust[dclust$new==7,]),"Gene_6newcluster7_WTYPGal_ChIPH3_rep1_14122022.txt")
+
+
