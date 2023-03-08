@@ -1,0 +1,51 @@
+
+rm(list = ls())
+
+#Rap1 2020
+#Overlap Rap1 rep1and2
+library(rtracklayer)
+#Overlap
+library(ChIPpeakAnno)
+
+setwd("E:/rep4Thailand/Rap1-ChIP/Downstream/Rap1 analysis rep124")
+
+R1=read.table("Rap1_1strep_Overlappeaks_withOcc_23062022.txt")
+R2=read.table("Rap1_2ndrep_Overlappeaks_withOcc_23062022.txt")
+R4=read.table("Rap1_4threp_Overlappeaks_withOcc_23062022.txt")
+
+gR1=makeGRangesFromDataFrame(R1, keep.extra.columns = T)
+gR2=makeGRangesFromDataFrame(R2, keep.extra.columns = T)
+gR4=makeGRangesFromDataFrame(R4, keep.extra.columns = T)
+
+ovR=findOverlapsOfPeaks(gR1,gR2,gR4)
+ovR$venn_cnt
+
+setov=ovR$peaklist$`gR1///gR2///gR4`
+alov=as.data.frame(setov$peakNames)
+ov=as.data.frame(ovR$peaksInMergedPeaks)
+
+alov2=alov
+
+for (i in 1:327) {
+print(i)
+  txt=alov2[alov2$group%in%i,"value"]
+  alov2[alov2$value%in%txt[1],"value"]=ov[rownames(ov)%in%txt[1],"log_Rap1divH3iWT"]
+  alov2[alov2$value%in%txt[2],"value"]=ov[rownames(ov)%in%txt[2],"log_Rap1divH3iWT"]
+  alov2[alov2$value%in%txt[3],"value"]=ov[rownames(ov)%in%txt[3],"log_Rap1divH3iWT"]
+  
+}
+
+alov2$group_name=substr(alov$value,2,3)
+
+library(ggplot2)
+colnames(alov2)=c("group","replicate","foldchange")
+alov2$foldchange=as.numeric(alov2$foldchange)
+
+ggplot(alov2, aes(replicate, foldchange, group=group))+
+  geom_line()+geom_point()+
+  geom_hline(yintercept = 0, color = "red", size=1, linetype="dashed" )+
+  ggtitle("Rap1 occupancy change in H3 depletion 1st rep vs 2nd rep vs 4th rep")+
+  theme(plot.title = element_text(hjust = 0.5), 
+       plot.subtitle = element_text(hjust = 0.5),
+       text = element_text(size=15))+
+  scale_y_continuous(breaks=seq(-6, 6, 1))
