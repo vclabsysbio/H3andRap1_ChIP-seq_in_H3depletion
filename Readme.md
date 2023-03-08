@@ -4,7 +4,16 @@
 This is repository for H3 and Rap1 ChIP-seq in H3 depletion ( *name of paper*). 
 
 
-Requirement
+Requirement R Packages
+- rtracklayer
+- ChIPpeakAnno
+- seqinr
+- DiffLogo
+- dplyr
+- reshape2
+- readxl
+- Complexheatmap
+- ggplot2
 
 R version 4.1.1
 
