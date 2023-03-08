@@ -1,0 +1,55 @@
+
+###Boxplot of log divided H3 for fig1###
+rm(list = ls())
+#import library and set directory
+library(rtracklayer)
+library(reshape2)
+library(ggplot2)
+
+# 16/06/2022 
+
+#import rep1 BW
+setwd("E:/rep2 (David)/H3and6TFfirstrep/H3bw_default/")
+fname="H3_SI_10_divided_default.bw"
+flist<-import.bw(fname)
+boxdata<-as.data.frame(flist$score)
+boxdata$rep="rep1"
+colnames(boxdata)<-c("log2_H3","Replicates")
+
+#import rep3 BW
+setwd("E:/rep3 Thailand/ChIP-seq-rep3/DownstreamAnalysis/H3_thirpdrep_BW")
+fname2<-"H3_thirdrep2021TH_divided_default.bw"
+flist2<-import.bw(fname2)
+boxdata2<-as.data.frame(flist2$score)
+boxdata2$rep="rep3"
+colnames(boxdata2)<-c("log2_H3","Replicates")
+
+#import rep4 BW
+setwd("E:/rep4Thailand/Mapped")
+setwd("E:/rep4Thailand/H3-ChIP/fixMappedH3/H3rep4")
+
+fname3<-"H3_4threp2022TH_divided_default.bw"
+flist3<-import.bw(fname3)
+boxdata3<-as.data.frame(flist3$score)
+boxdata3$rep="rep4"
+colnames(boxdata3)<-c("log2_H3","Replicates")
+
+boxdata4=rbind(boxdata,boxdata2,boxdata3)
+
+######Violin############
+library(ggplot2)
+setwd("E:/rep4Thailand/Downstream analysis/H3depletion_foldchange")
+
+png("H3_ggviolinplot_default_rep1rep3rep4_16062022.png")  
+ggboxdata<-ggplot(boxdata4,aes(Replicates, log2_H3,fill=Replicates))
+
+#ggboxdata+geom_violin(fill='#A4A4A4')+stat_summary(fun.y=mean, geom="point", shape=23, size=2, color="red")
+ggboxdata+geom_violin()+geom_hline(yintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  theme(text = element_text(face ="bold",size=20))+xlab("H3 ChIP")+ylab("Fold-change")+
+  ggtitle("H3 depletion")+theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5),
+                                text = element_text(size=15))
+
+dev.off()
+
+
+############################### END ###################################
