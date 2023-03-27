@@ -1,0 +1,121 @@
+
+#Annotate peaks 
+
+######### Scatter plot ################
+rm(list = ls())
+setwd("E:/rep4Thailand/Rap1-ChIP/Downstream/Rap1 analysis rep124")
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+# annotate file 
+
+listf=list.files(pattern=".txt")
+rep1_WG=read.table("Rap1_1strep_WTGal_from124OV_TFBS_26012023_annotate_26012023.txt")  
+rep1_WD=read.table("Rap1_1strep_WTD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep1_HG=read.table("Rap1_1strep_H3iGal_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep1_HD=read.table("Rap1_1strep_H3iD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+
+rep2_WG=read.table("Rap1_2ndrep_WTGal_from124OV_TFBS_26012023_annotate_26012023.txt")  
+rep2_WD=read.table("Rap1_2ndrep_WTD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep2_HG=read.table("Rap1_2ndrep_H3iGal_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep2_HD=read.table("Rap1_2ndrep_H3iD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+
+rep4_WG=read.table("Rap1_4threp_WTGal_from124OV_TFBS_26012023_annotate_26012023.txt")  
+rep4_WD=read.table("Rap1_4threp_WTD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep4_HG=read.table("Rap1_4threp_H3iGal_from124OV_TFBS_26012023_annotate_26012023.txt") 
+rep4_HD=read.table("Rap1_4threp_H3iD_from124OV_TFBS_26012023_annotate_26012023.txt") 
+
+
+All=left_join(rep4_WG%>%count(annotation),
+              rep4_WD%>%count(annotation),by="annotation")%>%
+  left_join(.,rep4_HG%>%count(annotation),by="annotation")%>%
+  left_join(.,rep4_HD%>%count(annotation),by="annotation")
+
+colnames(All)[2:5]=c("WT_YPG","WT_YPD","H3i_YPG","H3i_YPD")
+mA=melt(All)
+colnames(mA)=c("Genomic_features","Conditions","Count")
+
+
+#bar plot
+mytheme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=19),
+              axis.title.y = element_text(size=16),axis.title.x = element_text(size=16),
+              legend.text=element_text(size=20),
+              axis.text.x = element_text(size = 20),
+              axis.text.y = element_text(size = 20))
+
+ggplot(mA, aes(Conditions,Count,fill=Genomic_features))+
+  geom_bar(stat="identity")+ylim(0,500)+
+  xlab("Conditions")+ylab("Count")+mytheme+
+  scale_fill_manual(values = c("#e7298a","#238443","#ec7014","#ffd92f","#41b6c4"))+
+  ggtitle("Count of genomic features in unique TFBS of Rap1 1st rep")
+
+############percentage stack bar plot#########
+
+mA1=mA%>%group_by(Conditions)%>%mutate(per=Count/sum(Count, na.rm = T)*100)
+mA1$Count=as.numeric(mA1$Count)
+ggplot(mA1, aes(Conditions,per,fill=Genomic_features))+
+  geom_bar(position="stack",stat="identity")+
+  ylab("Percentage")+mytheme+
+  scale_fill_manual(values = c("#e7298a","#238443","#ec7014","#ffd92f","#41b6c4"))+
+  geom_text(aes(label=paste0("n=",Count)),size=5,
+            position=position_stack(vjust=0.5))+
+  scale_x_discrete(labels=c("WT_YPG"= paste0("WT_YPG\n","n=",sum(mA1[mA1$Conditions=="WT_YPG","Count"], na.rm = T)),
+                            "WT_YPD"= paste0("WT_YPD\n ","n=",sum(mA1[mA1$Conditions=="WT_YPD","Count"], na.rm = T)),
+                            "H3i_YPG"= paste0("H3i_YPG\n ","n=",sum(mA1[mA1$Conditions=="H3i_YPG","Count"], na.rm = T)),
+                            "H3i_YPD"= paste0("H3i_YPD\n","n=",sum(mA1[mA1$Conditions=="H3i_YPD","Count"], na.rm = T))))+
+  ggtitle("Percentage of genomic features in TFBS of Rap1 4th rep")
+
+ggsave("Percentage_genomicfeatures_uniqueTFBS_4conditions_Rap1_1strep_28102021.png",
+       width = 30, height = 20, units = "cm")
+
+## switching replicate by input read.table
+
+###### Find overlap #####
+g=list(rep1_WG[rep1_WG$annotation%in%"Promoter","geneId"],
+       rep1_WD[rep1_WD$annotation%in%"Promoter","geneId"], 
+       rep1_HG[rep1_HG$annotation%in%"Promoter","geneId"], 
+       rep1_HD[rep1_HD$annotation%in%"Promoter","geneId"])
+length(Reduce(intersect,g))
+
+g=list(rep1_WG[rep1_WG$annotation%in%"Exon","geneId"],
+       rep1_WD[rep1_WD$annotation%in%"Exon","geneId"], 
+       rep1_HG[rep1_HG$annotation%in%"Exon","geneId"], 
+       rep1_HD[rep1_HD$annotation%in%"Exon","geneId"])
+length(Reduce(intersect,g))
+
+g=list(rep1_WG[rep1_WG$annotation%in%"Intergenic","geneId"],
+       rep1_WD[rep1_WD$annotation%in%"Intergenic","geneId"], 
+       rep1_HG[rep1_HG$annotation%in%"Intergenic","geneId"], 
+       rep1_HD[rep1_HD$annotation%in%"Intergenic","geneId"])
+length(Reduce(intersect,g))
+
+g=list(rep1_WG[rep1_WG$annotation%in%"Down Stream","geneId"],
+       rep1_WD[rep1_WD$annotation%in%"Down Stream","geneId"], 
+       rep1_HG[rep1_HG$annotation%in%"Down Stream","geneId"], 
+       rep1_HD[rep1_HD$annotation%in%"Down Stream","geneId"])
+length(Reduce(intersect,g))
+
+## Calcualte relative change of TFBS number
+X=nrow(rep1_WD[rep1_WD$annotation%in%"Promoter",])/nrow(rep1_WG[rep1_WG$annotation%in%"Promoter",])
+X2=nrow(rep1_HD[rep1_HD$annotation%in%"Promoter",])/nrow(rep1_HG[rep1_HG$annotation%in%"Promoter",])
+Xp=log2(X2/X)
+
+X=nrow(rep1_WD[rep1_WD$annotation%in%"Exon",])/nrow(rep1_WG[rep1_WG$annotation%in%"Exon",])
+X2=nrow(rep1_HD[rep1_HD$annotation%in%"Exon",])/nrow(rep1_HG[rep1_HG$annotation%in%"Exon",])
+Xe=log2(X2/X)
+
+X=nrow(rep1_WD[rep1_WD$annotation%in%"Intergenic",])/nrow(rep1_WG[rep1_WG$annotation%in%"Intergenic",])
+X2=nrow(rep1_HD[rep1_HD$annotation%in%"Intergenic",])/nrow(rep1_HG[rep1_HG$annotation%in%"Intergenic",])
+Xi=log2(X2/X)
+
+X=nrow(rep1_WD[rep1_WD$annotation%in%"Down Stream",])/nrow(rep1_WG[rep1_WG$annotation%in%"Down Stream",])
+X2=nrow(rep1_HD[rep1_HD$annotation%in%"Down Stream",])/nrow(rep1_HG[rep1_HG$annotation%in%"Down Stream",])
+Xd=log2(X2/X)
+
+log2((14/16)/(11/26))
+
+  
+  
+  
+  
