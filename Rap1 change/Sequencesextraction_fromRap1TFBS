@@ -1,0 +1,90 @@
+
+library(seqinr)
+#setdir for call genome fastA file
+
+setwd("E:/rep2 (David)/Rap1 2020/scripts/Motif analysis")
+#read genome fastA
+seq = read.fasta("SacCer3.fa",seqtype="DNA")
+
+#sequences
+lq=list(g1,g2,g3,g4,g5,g6,g7,g8)
+
+N=c("sequence_H3_inRap1_lessthanneg1_WTG_270223.txt",
+  "sequence_H3_inRap1_morethanneg05_WTG_270223.txt",
+  "sequence_H3_inRap1_lessthanneg1_WTD_270223.txt",
+  "sequence_H3_inRap1_morethanneg05_WTD_270223.txt",
+  "sequence_H3_inRap1_lessthanneg1_HiG_270223.txt",
+  "sequence_H3_inRap1_morethanneg05_HiG_270223.txt",
+  "sequence_H3_inRap1_lessthanneg1_HiD_270223.txt",
+  "sequence_H3_inRap1_morethanneg05_HiD_270223.txt")
+
+
+for (i in 1:length(lq)) {
+  #T1=as.data.frame(lq[i])
+  T1=lq[[i]]
+  T1$length<-(T1$end-T1$start)+1
+  
+  for(w in 1:length(T1[,1])){
+    print(w)
+    if(w==1){
+      if(T1$length[w]>=8){
+        print(">=8")
+        seq1<-seq[[match(T1[,1],names(seq))[w]]][T1$start[w]:T1$end[w]]
+        seq1<-paste(seq1, collapse="")
+        data1<-paste(">seq","_",w,sep="")
+        data1<-rbind(data1,seq1)
+      }
+      
+      else{
+        print(paste0("<8   ",T1$length[w]))
+        l<-8-T1$length[w]
+        if(l<=4){
+          ifelse(l%%2==0,l,l<-l+1)
+          Start<-T1$start[w]-l/2
+          End<-T1$end[w]+l/2
+        }
+        else{
+          print("seqeunce too short")
+        }
+        seq1<-seq[[match(T1[,1],names(seq))[w]]][Start:End]
+        seq1<-paste(seq1, collapse="")
+        data1<-paste(">seq","_",w,sep="")
+        data1<-rbind(data1,seq1)
+        
+      }
+    }
+    else{
+      #print(w)
+      if(T1$length[w]>=8){
+        #print(">=8")
+        seq1<-seq[[match(T1[,1],names(seq))[w]]][T1$start[w]:T1$end[w]]
+        seq1<-paste(seq1, sep="",collapse="")
+        data2<-paste(">seq","_",w,sep="")
+        data1<-rbind(data1,data2,seq1)
+      }
+      else{
+        print(paste0("<8   ",T1$length[w]))
+        l<-8-T1$length[w]
+        if(l<=4){
+          ifelse(l%%2==0,l,l<-l+1)
+          Start<-T1$start[w]-l/2
+          End<-T1$end[w]+l/2
+          
+          seq1<-seq[[match(T1[,1],names(seq))[w]]][Start:End]
+          seq1<-paste(seq1, sep="",collapse="")
+          data2<-paste(">seq","_",w,sep="")
+          data1<-rbind(data1,data2,seq1)
+        }
+        else{
+          print("seqeunce too short")
+        }
+        
+        
+      }
+    }
+  }
+  
+  writeLines(data1,N[i])
+  
+}
+
