@@ -1,0 +1,119 @@
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(rtracklayer)
+library(ChIPpeakAnno)
+library(VennDiagram)
+require(ChIPseeker)
+require(TxDb.Scerevisiae.UCSC.sacCer3.sgdGene)
+
+
+rm(list=ls())
+txdb<-TxDb.Scerevisiae.UCSC.sacCer3.sgdGene
+#### 1. import data ####
+#H3
+setwd("E:/rep2 (David)/H3and6TFfirstrep/H3bw_default/")
+fname="H3_SI_10_divided_default.bw"
+
+setwd("E:/rep4Thailand/H3-ChIP/fixMappedH3/H3rep4")
+fname=("H3_4threp2022TH_divided_default.bw")
+
+flist<-import.bw(fname)
+boxdata<-as.data.frame(flist$score)
+boxdata$rep="rep1"
+colnames(boxdata)<-c("log2_H3","Replicate")
+
+peakAnno<-annotatePeak(flist,tssRegion = c(-400,0),TxDb = txdb)
+anno<-peakAnno
+print(anno)
+peakAnnoG<-as.GRanges(peakAnno)
+dataPeak<-as.data.frame(peakAnnoG)
+dataPeak1<-dataPeak[,1:7]
+
+print("grepl")
+E<-grepl("^.*Exon",dataPeak1$annotation)
+P<-grepl("^.*Pro",dataPeak1$annotation)
+I<-grepl("^.*Intron",dataPeak1$annotation)
+It<-grepl("^.*Intergenic",dataPeak1$annotation)
+D<-grepl("^.*Down",dataPeak1$annotation)
+
+it<-c(dataPeak1$score[It],dataPeak1$score[D])
+print("cbind")
+boxdata2<-cbind(dataPeak1$score[E],dataPeak1$score[I],dataPeak1$score[P],it)
+colnames(boxdata2)<-c("Exon","Intron","Promoter","Intergenic region")
+box<-as.data.frame(boxdata2)
+
+
+#Rap1 H3 depletion
+# import Rap1  peaks
+setwd("E:/rep4Thailand/Rap1-ChIP/Downstream/Rap1 analysis rep124/Rap1 with Occ")
+listf=list.files(pattern="1st")
+listf=listf[grepl("from124OV_withOcc_26012023_annotate_08022023",listf)]
+listf
+
+rep1_wtg=read.table(listf[4])  #checkfile name
+rep1_wtg$peak="WT_YPGal"
+rep1_wtg$log2H3iWT_H3r1=log2((rep1_wtg$SI10H3_H3i_YPD/rep1_wtg$SI10H3_H3i_YPGal)/(rep1_wtg$SI10H3_WT_YPD/rep1_wtg$SI10H3_WT_YPGal))
+rep1_wtg$log2H3iWT_H3r4=log2((rep1_wtg$Rep4_H3_H3i_YPD/rep1_wtg$Rep4_H3_H3i_YPGal)/(rep1_wtg$Rep4_H3_WT_YPD/rep1_wtg$Rep4_H3_WT_YPGal))
+
+rep1_wtd=read.table(listf[3])  #checkfile name
+rep1_wtd$peak="WT_YPD"
+rep1_wtd$log2H3iWT_H3r1=log2((rep1_wtd$SI10H3_H3i_YPD/rep1_wtd$SI10H3_H3i_YPGal)/(rep1_wtd$SI10H3_WT_YPD/rep1_wtd$SI10H3_WT_YPGal))
+rep1_wtd$log2H3iWT_H3r4=log2((rep1_wtd$Rep4_H3_H3i_YPD/rep1_wtd$Rep4_H3_H3i_YPGal)/(rep1_wtd$Rep4_H3_WT_YPD/rep1_wtd$Rep4_H3_WT_YPGal))
+
+rep1_hig=read.table(listf[2])  #checkfile name
+rep1_hig$peak="H3i_YPGal"
+rep1_hig$log2H3iWT_H3r1=log2((rep1_hig$SI10H3_H3i_YPD/rep1_hig$SI10H3_H3i_YPGal)/(rep1_hig$SI10H3_WT_YPD/rep1_hig$SI10H3_WT_YPGal))
+rep1_hig$log2H3iWT_H3r4=log2((rep1_hig$Rep4_H3_H3i_YPD/rep1_hig$Rep4_H3_H3i_YPGal)/(rep1_hig$Rep4_H3_WT_YPD/rep1_hig$Rep4_H3_WT_YPGal))
+
+rep1_hid=read.table(listf[1])  #checkfile name
+rep1_hid$peak="H3i_YPD"
+rep1_hid$log2H3iWT_H3r1=log2((rep1_hid$SI10H3_H3i_YPD/rep1_hid$SI10H3_H3i_YPGal)/(rep1_hid$SI10H3_WT_YPD/rep1_hid$SI10H3_WT_YPGal))
+rep1_hid$log2H3iWT_H3r4=log2((rep1_hid$Rep4_H3_H3i_YPD/rep1_hid$Rep4_H3_H3i_YPGal)/(rep1_hid$Rep4_H3_WT_YPD/rep1_hid$Rep4_H3_WT_YPGal))
+
+#overall
+H3=data.frame("foldchange"=boxdata$log2_H3,Study="H3")
+H3p=data.frame("foldchange"=box$Promoter,Study="H3-promoter")
+wtg=data.frame("foldchange"=rep1_wtg$log2H3iWT_H3r1, Study="Rap1 in WT YPGal")
+wtd=data.frame("foldchange"=rep1_wtd$log2H3iWT_H3r1, Study="Rap1 in WT YPD")
+hig=data.frame("foldchange"=rep1_hig$log2H3iWT_H3r1, Study="Rap1 in H3i YPGal")
+hid=data.frame("foldchange"=rep1_hid$log2H3iWT_H3r1, Study="Rap1 in H3i YPD")
+#for promoter
+H3=data.frame("foldchange"=boxdata$log2_H3,Study="H3")
+H3p=data.frame("foldchange"=box$Promoter,Study="H3-promoter")
+wtg=data.frame("foldchange"=rep1_wtg[rep1_wtg$annotation%in%"Promoter","log2H3iWT_H3r4"], Study="Rap1 in WT YPGal")
+wtd=data.frame("foldchange"=rep1_wtd[rep1_wtd$annotation%in%"Promoter","log2H3iWT_H3r4"], Study="Rap1 in WT YPD")
+hig=data.frame("foldchange"=rep1_hig[rep1_hig$annotation%in%"Promoter","log2H3iWT_H3r4"], Study="Rap1 in H3i YPGal")
+hid=data.frame("foldchange"=rep1_hid[rep1_hid$annotation%in%"Promoter","log2H3iWT_H3r4"], Study="Rap1 in H3i YPD")
+#for exon
+H3=data.frame("foldchange"=boxdata$log2_H3,Study="H3")
+H3p=data.frame("foldchange"=box$Promoter,Study="H3-promoter")
+wtg=data.frame("foldchange"=rep1_wtg[rep1_wtg$annotation%in%"Exon","log2H3iWT_H3r4"], Study="Rap1 in WT YPGal")
+wtd=data.frame("foldchange"=rep1_wtd[rep1_wtd$annotation%in%"Exon","log2H3iWT_H3r4"], Study="Rap1 in WT YPD")
+hig=data.frame("foldchange"=rep1_hig[rep1_hig$annotation%in%"Exon","log2H3iWT_H3r4"], Study="Rap1 in H3i YPGal")
+hid=data.frame("foldchange"=rep1_hid[rep1_hid$annotation%in%"Exon","log2H3iWT_H3r4"], Study="Rap1 in H3i YPD")
+
+a_rap1=rbind(H3,H3p,wtg,wtd,hig,hid)
+a_rap1$Study=factor(a_rap1$Study,
+                    levels=c("H3","H3-promoter",
+                             "Rap1 in WT YPGal",
+                             "Rap1 in WT YPD",
+                             "Rap1 in H3i YPGal",
+                             "Rap1 in H3i YPD"))
+
+mytheme=theme(plot.title = element_text(hjust = 0.5),text = element_text(size=19),
+              axis.title.y = element_text(size=18),
+              axis.title.x = element_text(size=16),
+              legend.text=element_text(size=14),
+              legend.title = element_text(size = 18),
+              axis.text.x = element_text(size = 16),
+              axis.text.y = element_text(size = 18),
+              strip.text.x = element_text(size = 14))
+
+#Plot1
+ggplot(a_rap1, aes(Study,foldchange, fill=Study))+geom_violin()+
+  geom_hline(yintercept=0, linetype="dashed", color="red",size=1)+
+  mytheme+
+  ggtitle("H3 fold change in Rap1 binding sites 1st rep at exon")+
+  xlab("TF")+ylab("Normalized H3 fold-change")+
+  theme(axis.text.x = element_text(angle = 30,hjust = 1))
