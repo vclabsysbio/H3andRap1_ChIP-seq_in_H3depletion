@@ -1,0 +1,140 @@
+rm(list = ls())
+
+#Rap1 2020
+#Overlap Rap1 rep1and2
+library(rtracklayer)
+#Overlap
+library(ChIPpeakAnno)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+####input RNA ########
+#rep1
+setwd("F:/H3i Project/5.DownStream_analysis/RNAseq/Park_mapping_hisatpipeline/RNA_table")
+fc_rna1=read.table("FoldChange_TPMfilter0addpsuedo1_WTH3iyeast_12022019.txt")
+
+#rep2
+setwd("E:/rep2 (David)/Second_replicate_2019/Analysis/RNA_analysis/RNAdownstream_analysis/RNAtable")
+fc_rna2=read.table("FoldChange_TPMfilter0addpsuedo1_WTH3iyeast_05022021.txt")
+
+#rep3
+setwd("E:/rep3 Thailand/RNA-seq-rep3/DownstreamRNA")
+fc_rna3=read.table("FoldChange_TPMfilter0addpsuedo1_WTH3iyeast_3rep_20052021.txt")
+
+
+rna=left_join(fc_rna1[,c(5,10,11,12)],fc_rna2[,c(5,10,11,12)], by="Gene.ID")
+colnames(rna)=c("Gene.ID","log2WT_rep1","log2H3i_rep1","log2H3iWT_rep1",
+                "log2WT_rep2","log2H3i_rep2","log2H3iWT_rep2")
+rna=left_join(rna,fc_rna3[,c(5,10,11,12)], by="Gene.ID")
+colnames(rna)=c("Gene.ID","log2WT_rep1","log2H3i_rep1","log2H3iWT_rep1",
+                "log2WT_rep2","log2H3i_rep2","log2H3iWT_rep2",
+                "log2WT_rep3","log2H3i_rep3","log2H3iWT_rep3")
+
+rownames(rna)=rna$Gene.ID
+#rna1=rna[,c("Gene.ID","log2H3iWT_rep1","log2H3iWT_rep2","log2H3iWT_rep3")]
+
+
+##
+setwd("E:/rep4Thailand/Rap1-ChIP/Downstream/Rap1 OVpeaks124")
+
+r1d=read.table("Rap1_1strep_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_1strep_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_1strep_consistUnchange05_annotate_08022023.txt")
+
+r1d=read.table("Rap1_2ndrep_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_2ndrep_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_2ndrep_consistUnchange05_annotate_08022023.txt")
+
+r1d=read.table("Rap1_4threp_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_4threp_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_4threp_consistUnchange05_annotate_08022023.txt")
+
+D=data.frame(r1d$rep1_logdivH3_H3iWT, 
+             r1d$rep3_logdivH3_H3iWT, 
+             r1d$rep4_logdivH3_H3iWT,
+             r1d$geneId ,r1d$annotation,"Decrease Rap1")
+colnames(D)=c("Foldchange_1st","Foldchange_3rd",
+              "Foldchange_4th","Gene.ID","Annotation","class")
+
+U=data.frame(r1u$rep1_logdivH3_H3iWT,
+             r1u$rep3_logdivH3_H3iWT,
+             r1u$rep4_logdivH3_H3iWT,
+             r1u$geneId,r1u$annotation,"Increase Rap1")
+colnames(U)=c("Foldchange_1st","Foldchange_3rd",
+              "Foldchange_4th","Gene.ID","Annotation","class")
+
+Un=data.frame(r1un$rep1_logdivH3_H3iWT,
+             r1un$rep3_logdivH3_H3iWT,
+             r1un$rep4_logdivH3_H3iWT,
+             r1un$geneId,r1un$annotation,"Unchange Rap1")
+colnames(Un)=c("Foldchange_1st","Foldchange_3rd",
+              "Foldchange_4th","Gene.ID","Annotation","class")
+
+r1=rbind(D,U,Un)
+
+rna1=rna[,c("Gene.ID","log2H3iWT_rep3")]
+r1_rna=left_join(r1,rna1, by="Gene.ID")
+mr1=melt(r1_rna, id.vars = c("log2H3iWT_rep3","class","Gene.ID","Annotation"))
+##skip###
+colors <- c('#5e3c99', '#f7f7f7', '#e66101')
+##x=class, y=H3, color =RNA
+#ggplot(mr1 , aes(class,value,color=log2H3iWT_rep1))+geom_jitter(size=3)+
+  geom_hline(yintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  ggtitle("H3 occupancy change in Rap1 binding 1st replicate\n 0.5 cutoff RNAstrep")+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size=15))+
+  scale_color_gradientn(colors = colors, limits=c(-5,5))+
+  xlab("Rap1 change")+ylab("H3 Fold change")+facet_wrap(~variable)
+
+##x=H3, y=RNA, color =class
+ggplot(mr1 , aes(value,log2H3iWT_rep1,color=class))+geom_jitter(size=3)+
+  geom_hline(yintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  geom_vline(xintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  ggtitle("H3 occupancy change in Rap1 binding 4th replicate\n 0.5 cutoff RNA1strep")+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size=15))+ylim(-10,10)+xlim(-2,2)+
+  scale_color_manual(values=c("Increase Rap1"="#FC717F","Decrease Rap1"="#00ABFD","Unchange Rap1"="#999999"))+
+  xlab("H3 Fold change")+ylab("Expression Fold change")+facet_wrap(~variable)
+
+mr1=mr1[mr1$variable%in%"Foldchange_4th",]
+#1 rep RNAS
+n1=nrow(mr1[mr1$class=="Increase Rap1"&mr1$log2H3iWT_rep3>0&mr1$value>0,])
+n2=nrow(mr1[mr1$class=="Increase Rap1"&mr1$log2H3iWT_rep3>0&mr1$value<0,])
+n3=nrow(mr1[mr1$class=="Increase Rap1"&mr1$log2H3iWT_rep3<0&mr1$value<0,])
+n4=nrow(mr1[mr1$class=="Increase Rap1"&mr1$log2H3iWT_rep3<0&mr1$value>0,])
+
+n5=nrow(mr1[mr1$class=="Decrease Rap1"&mr1$log2H3iWT_rep3>0&mr1$value>0,])
+n6=nrow(mr1[mr1$class=="Decrease Rap1"&mr1$log2H3iWT_rep3>0&mr1$value<0,])
+n7=nrow(mr1[mr1$class=="Decrease Rap1"&mr1$log2H3iWT_rep3<0&mr1$value<0,])
+n8=nrow(mr1[mr1$class=="Decrease Rap1"&mr1$log2H3iWT_rep3<0&mr1$value>0,])
+
+n9=nrow(mr1[mr1$class=="Unchange Rap1"&mr1$log2H3iWT_rep3>0&mr1$value>0,])
+n10=nrow(mr1[mr1$class=="Unchange Rap1"&mr1$log2H3iWT_rep3>0&mr1$value<0,])
+n11=nrow(mr1[mr1$class=="Unchange Rap1"&mr1$log2H3iWT_rep3<0&mr1$value<0,])
+n12=nrow(mr1[mr1$class=="Unchange Rap1"&mr1$log2H3iWT_rep3<0&mr1$value>0,])
+
+##x=H3, y=RNA, color =class
+P1=ggplot(mr1 , aes(value,log2H3iWT_rep3,color=class))+geom_jitter(size=3)+
+  geom_hline(yintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  geom_vline(xintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  ggtitle("H3 occupancy change in Rap1 binding 4th replicate\n 0.5 cutoff RNA1strep")+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size=15))+ylim(-10,10)+xlim(-2,2)+
+  xlab("H3 Fold change")+ylab("Expression Fold change")+
+  scale_color_manual(values=c("Increase Rap1"="#FC717F","Decrease Rap1"="#00ABFD","Unchange Rap1"="#999999"))+
+  annotate(geom="text",x=1.8,y=8, size=5,label=  paste0("Up n=",n1))+
+  annotate(geom="text",x=-1.8,y=8, size=5,label=  paste0("Up n=",n2))+
+  annotate(geom="text",x=-1.8,y=-8, size=5,label=  paste0("Up n=",n3))+
+  annotate(geom="text",x=1.8,y=-8, size=5,label=  paste0("Up n=",n4))+
+  annotate(geom="text",x=1.8,y=7, size=5,label=  paste0("Down n=",n5))+
+  annotate(geom="text",x=-1.8,y=7, size=5,label=  paste0("Down n=",n6))+
+  annotate(geom="text",x=-1.8,y=-9, size=5,label=  paste0("Down n=",n7))+
+  annotate(geom="text",x=1.8,y=-9, size=5,label=  paste0("Down n=",n8))+
+  annotate(geom="text",x=1.8,y=6, size=5,label=  paste0("Unchange n=",n9))+
+  annotate(geom="text",x=-1.8,y=6, size=5,label=  paste0("Unchange n=",n10))+
+  annotate(geom="text",x=-1.8,y=-10, size=5,label=  paste0("Unchange n=",n11))+
+  annotate(geom="text",x=1.8,y=-10, size=5,label=  paste0("Unchange n=",n12))
