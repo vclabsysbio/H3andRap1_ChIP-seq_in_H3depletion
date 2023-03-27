@@ -1,0 +1,48 @@
+rm(list = ls())
+#08.02.2023
+#Rap1 2020
+#Overlap Rap1 rep1and2
+library(rtracklayer)
+#Overlap
+library(ChIPpeakAnno)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+
+setwd("E:/rep4Thailand/Rap1-ChIP/Downstream/Rap1 OVpeaks124")
+
+r1d=read.table("Rap1_1strep_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_1strep_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_1strep_consistUnchange05_annotate_08022023.txt")
+
+r1d=read.table("Rap1_2ndrep_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_2ndrep_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_2ndrep_consistUnchange05_annotate_08022023.txt")
+
+r1d=read.table("Rap1_4threp_consistDown05_annotate_08022023.txt")
+r1u=read.table("Rap1_4threp_consistUp05_annotate_08022023.txt")
+r1un=read.table("Rap1_4threp_consistUnchange05_annotate_08022023.txt")
+
+D=data.frame(r1d$rep1_logdivH3_H3iWT, r1d$rep3_logdivH3_H3iWT, r1d$rep4_logdivH3_H3iWT, "Down")
+colnames(D)=c("Foldchange_1st","Foldchange_3rd","Foldchange_4th","class")
+U=data.frame(r1u$rep1_logdivH3_H3iWT,r1u$rep3_logdivH3_H3iWT,r1u$rep4_logdivH3_H3iWT,"Up")
+colnames(U)=c("Foldchange_1st","Foldchange_3rd","Foldchange_4th","class")
+Un=data.frame(r1un$rep1_logdivH3_H3iWT,r1un$rep3_logdivH3_H3iWT,r1un$rep4_logdivH3_H3iWT,"Unchange")
+colnames(Un)=c("Foldchange_1st","Foldchange_3rd","Foldchange_4th","class")
+r1=rbind(D,U,Un)
+
+r1$class[r1$class=="Down"]<-"Decrease Rap1"
+r1$class[r1$class=="Up"]<-"Increase Rap1"
+r1$class[r1$class=="Unchange"]<-"Unchange Rap1"
+
+r1$class=factor(r1$class, levels = c("Decrease Rap1","Increase Rap1","Unchange Rap1"))
+mr1=melt(r1)
+ggplot(mr1 , aes(class,value,fill=class))+geom_violin()+geom_point()+
+  geom_hline(yintercept = 0, color = "red", size=0.25, linetype="dashed" )+
+  ggtitle("H3 occupancy change in Rap1 binding rep4th\n 0.5 cutoff")+
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5),
+        text = element_text(size=15),
+        axis.text.x = element_text(angle = 30, vjust=1, hjust =1))+
+  scale_fill_manual(values=c("Increase Rap1"="#FC717F","Decrease Rap1"="#00ABFD","Unchange Rap1"="#999999"))+
+  xlab("Rap1 change")+ylab("H3 Fold change")+facet_wrap(~variable)
